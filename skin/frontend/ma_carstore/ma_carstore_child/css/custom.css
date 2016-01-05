@@ -1,5 +1,9 @@
 /*Custom header style*/
-.ma-header-container #nav > li > a {font-size: .8em;/*padding: 11px 10px;*/}
+.ma-header-container #nav > li > a {font-size: .8em;}
 .ma-header-container #nav > li > ul {top: 40px;}
 .ma-header-container #nav div {/*top: 40px;*/}
 .ma-header-container .header {padding-bottom: 10px;}
+
+@media (max-width: 1200px) {
+	.ma-header-container #nav > li > a {font-size: .7em;padding: 11px 11px;}
+}
