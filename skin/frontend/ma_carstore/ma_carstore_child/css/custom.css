@@ -1,8 +1,18 @@
-/*Custom header style*/
+/*Header style*/
 .ma-header-container #nav > li > a {font-size: .8em;}
 .ma-header-container #nav > li > ul {top: 40px;}
 .ma-header-container #nav div {/*top: 40px;*/}
 .ma-header-container .header {padding-bottom: 10px;}
+
+/*Category Layout*/
+.category-title {/*display:block !important;*/}
+.category-image{width:50% !important;margin:auto !important;}
+.ma_carstore_child.category-products {border:none;}
+.ma_carstore_child.category-products .products-grid li.item {border:none;}
+
+/*Product Page*/
+.product-shop .no-rating a {padding: 1px 0 0 20px;}
+.data-table td {white-space:nowrap;}
 
 @media (max-width: 1200px) {
 	.ma-header-container #nav > li > a {font-size: .7em;padding: 11px 11px;}
