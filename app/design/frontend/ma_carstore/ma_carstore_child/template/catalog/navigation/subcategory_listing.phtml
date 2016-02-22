@@ -5,8 +5,9 @@
 		if($_categories->count()):
 			$categorycount = 0;
 			foreach ($_categories as $_category):
-				if($_category->getIsActive()):
-					$cur_category=Mage::getModel('catalog/category')->load($_category->getId());
+				$cur_category=Mage::getModel('catalog/category')->load($_category->getId());
+				//var_dump($cur_category->getIncludeInMenu());
+				if($_category->getIsActive() && $cur_category->getIncludeInMenu()):
 					$layer = Mage::getSingleton('catalog/layer');
 					$layer->setCurrentCategory($cur_category);
 					$catName = $this->getCurrentCategory()->getName();
@@ -31,13 +32,13 @@
 						</h2>
 					</li>
 	<?php
+					if($categorycount == 2){
+						$categorycount = 0;
+						echo "</ul>\n\n<ul class=\"products-grid\">";
+					}
+					else
+						$categorycount++;
 				endif;
-				if($categorycount == 2){
-					$categorycount = 0;
-					echo "</ul>\n\n<ul class=\"products-grid\">";
-				}
-				else
-					$categorycount++;
 			endforeach;
 		endif;
 	?>

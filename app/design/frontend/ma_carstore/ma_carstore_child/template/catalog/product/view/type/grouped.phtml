@@ -31,17 +31,64 @@
  * @see Mage_Catalog_Block_Product_View_Type_Grouped
  */
 ?>
-<?php $this->setPreconfiguredValue(); ?>
 <?php 
+    $this->setPreconfiguredValue();
     $_product = $this->getProduct(); 
+    // $_diagram_numbers = $_product["diagram_number"];
+    // $_diagram_qtys = $_product["diagram_qty"];
+    // $_diagram_numbers_array = explode(',',$_diagram_numbers);
+    // $_diagram_qtys_array = explode(',',$_diagram_qtys);
+
+    $currentCategory = Mage::registry('current_category')->getId();
+    $category = Mage::getModel('catalog/category')->load($currentCategory);
+    $categoryCollection= $category->getChildrenCategories()->addIsActiveFilter();
+    $child_id;
+    foreach($categoryCollection as $c){
+        if ( strpos( $_product->getName(), $c->getName() ) ){
+           # echo "<br>".$c->getName()." ".$c->getID();
+            $child_id = $c->getID();
+        }
+    }
     
-    $_diagram_numbers = $_product["diagram_number"];
-    $_diagram_qtys = $_product["diagram_qty"];
 
-    $_diagram_numbers_array = explode(',',$_diagram_numbers);
-    $_diagram_qtys_array = explode(',',$_diagram_qtys);
 
-    //var_dump($_diagram_numbers_array);    
+
+    function getReferenceID($i, $c){
+        $sku = $i['sku'];
+        $conn = new mysqli("localhost","root","root","lockwoodMagentoDev");
+        //$conn = new mysqli("a9f7e9a3c32f0a582918e611df89e67fe998ada6.rackspaceclouddb.com","magentodev","4ueEW52zGC4uz9DBGumBRnNfQpXACA","dev_magento");
+        
+        //get productID of sku
+        $result = $conn->query("SELECT ProductID FROM ssms_product_sku WHERE Sku = '$sku';") OR DIE(mysqli_error($conn));
+        $row = $result->fetch_array();
+        if($row) {
+            do $this_id = $row['ProductID'];
+            while ($row = $result->fetch_array());
+        }
+
+        //convert category id
+        $result2 = $conn->query("SELECT asp_cat_id FROM asp_mag_category_map WHERE mag_cat_id = '$c' LIMIT 1;") OR DIE(mysqli_error($conn));
+        //$result2 = $conn->query("SELECT asp_cat_id FROM asp_map_category_map_live WHERE mag_cat_id = '$c' LIMIT 1;") OR DIE(mysqli_error($conn));
+        $row = $result2->fetch_array();
+        if($row) {
+            do $this_c = $row['asp_cat_id'];
+            while ($row = $result2->fetch_array());
+        }
+
+        //lookup reference ID
+        $result3 = $conn->query("SELECT ReferenceNumber FROM ssms_grouped_product_reference WHERE ProductID = '$this_id'AND CategoryID = '$this_c';") OR DIE(mysqli_error($conn));
+        $row = $result3->fetch_array();
+        if($row) {
+            do $ref_id = $row['ReferenceNumber'];
+            while ($row = $result3->fetch_array());
+        }
+
+        return $ref_id;
+    }
+
+
+
+
 ?>
 <?php $_associatedProducts = $this->getAssociatedProducts(); ?>
 <?php $_hasAssociatedProducts = count($_associatedProducts) > 0; ?>
@@ -61,23 +108,49 @@
         <tr>
             <th>No.</th>
             <th>Part #</th>
-            <th><?php echo $this->__('Description') ?></th>
+            <th style="width:50%;"><?php echo $this->__('Description') ?></th>
             <?php if ($this->getCanShowProductPrice($_product)): ?>
             <th class="a-right"><?php echo $this->__('Price') ?></th>
             <?php endif; ?>
             <?php if ($_product->isSaleable()): ?>
-            <th>Qty</th>
+            <!-- <th>Qty</th> -->
             <th class="a-center"><?php echo $this->__('Buy') ?></th>
             <?php endif; ?>
         </tr>
     </thead>
     <tbody>
     <?php if ($_hasAssociatedProducts): ?>
-    <?php $_index = 0; foreach ($_associatedProducts as $_item): ?>
-        <?php $_finalPriceInclTax = $this->helper('tax')->getPrice($_item, $_item->getFinalPrice(), true) ?>
+    <?php 
+        $associatedProductsWithRefernces = array();
+        foreach ($_associatedProducts as $i){
+            $referenceID = getReferenceID($i, $child_id);
+            $data = array (
+                'product' => $i,
+                'referenceID' => $referenceID
+            );
+            $associatedProductsWithRefernces[] = $data;
+        }
+        // foreach ($associatedProductsWithRefernces as $a){echo "<br>".$a['product']['sku']." - ".$a['referenceID']; }
+        // echo "<br>";
+        usort($associatedProductsWithRefernces, function ($a, $b){return $a['referenceID'] - $b['referenceID']; });
+        // foreach ($associatedProductsWithRefernces as $a){echo "<br>".$a['product']['sku']." - ".$a['referenceID']; }
+    ?>
+
+
+
+    <?php $_index = 0; #foreach ($_associatedProducts as $_item): ?>
+    <?php foreach ($associatedProductsWithRefernces as $_itemWithReference): ?>
+    <?php $_item = $_itemWithReference['product']; ?>
+    <?php $_finalPriceInclTax = $this->helper('tax')->getPrice($_item, $_item->getFinalPrice(), true) ?>
         <tr>
-            <td> <?php if ($_diagram_numbers_array[$_index]) echo $_diagram_numbers_array[$_index]; ?> </td>
-            <td><?php echo $_item["sku"]; ?></td>
+            <?php #if  ?>
+            <td>
+                <?php 
+                    echo $_itemWithReference['referenceID'];
+                ?>
+            </td>
+            <?php #endif; ?> 
+            <td><?php echo $_item['sku']; ?></td>
             <td><?php echo $this->escapeHtml($_item->getName()) ?></td>
             <?php if ($this->getCanShowProductPrice($_product)): ?>
                 <td class="a-right">
@@ -87,7 +160,7 @@
                     <?php endif; ?>
                 </td>
             <?php endif; ?>
-            <td> <?php if ($_diagram_qtys_array) echo $_diagram_qtys_array[$_index]; ?> </td>
+            <!-- <td> <?php #if ($_diagram_qtys_array) echo $_diagram_qtys_array[$_index]; ?> </td> -->
             <?php if ($_product->isSaleable()): ?>
             <td class="a-center">
                 <?php if ($_item->isSaleable()) : ?>
